@@ -20,7 +20,7 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
     char buf[256];
     int len = 0;
 
-    ktime_get_real_ts64(&ts_now);
+    ktime_get_real_ts64(&ts_now); //this is where we get current time
 
     len = snprintf(buf, sizeof(buf), "current time: %lld\n", (long long)ts_now.tv_sec);
 
