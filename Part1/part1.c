@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 int main() {
     // System Call 1: Print a message
@@ -12,5 +13,5 @@ int main() {
     fork();
     
     // System Call 4: Exit the program
-    _exit(0);
+    exit(1);
 }
