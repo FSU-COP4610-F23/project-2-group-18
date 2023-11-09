@@ -54,7 +54,6 @@ DEFINE_MUTEX(floor_mutex);
 static struct Elevator elevator_thread;
 static struct Building building;
 static int flag = 0; //0 for off, 1 for on
-static int passengersServiced = 0;
 static int stop = 0; //0 for not trying to stop, 1 for trying to stop (change back to 0 after stopped)
 
 extern int (*STUB_start_elevator)(void);
@@ -74,6 +73,7 @@ struct Passenger{ //struct to store all of the varibles that passenger needs
 };
 
 struct Elevator{
+    int passengersServiced;
     enum state status;
     int current_floor;
     int numPassengers; //this is just a count of how many in elevator
@@ -273,7 +273,7 @@ void removePassenger(struct Elevator *e_thread) //need to pass in info to know w
             e_thread->weight -= e_thread->passengers[i].weight;
             e_thread->passengers[i].type = -1; 
             e_thread->numPassengers--;
-            passengersServiced++;
+            e_thread->passengersServiced++;
             mutex_unlock(&elevator_mutex);
         }
     }
@@ -468,7 +468,7 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
         int floor = i+1;
         
         mutex_lock(&elevator_mutex);
-        int temp = (i != e_thread->current_floor);
+        int temp = (i != e_thread->current_floor)-1;
         mutex_unlock(&elevator_mutex);
         if(temp)
         {
@@ -504,16 +504,16 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
                     case -1:
                         break;
                     case 0:
-                        len += sprintf(buf + len, " F%d", e_thread->passengers[i].destination_floor);
+                        len += sprintf(buf + len, " F%d", variable->destination_floor);
                         break;
                     case 1:
-                        len += sprintf(buf + len, " O%d", e_thread->passengers[i].destination_floor);
+                        len += sprintf(buf + len, " O%d", variable->destination_floor);
                         break;
                     case 2:
-                        len += sprintf(buf + len, " J%d", e_thread->passengers[i].destination_floor);
+                        len += sprintf(buf + len, " J%d", variable->destination_floor);
                         break;
                     case 3:
-                        len += sprintf(buf + len, " S%d", e_thread->passengers[i].destination_floor);
+                        len += sprintf(buf + len, " S%d", variable->destination_floor);
                         break;
                     default:
                         break;
@@ -538,7 +538,7 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
 
     mutex_lock(&floor_mutex);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", building.num_people);
-    // len += sprintf(buf + len, "Number of passengers serviced: %d\n", passengersServiced);
+    // len += sprintf(buf + len, "Number of passengers serviced: %d\n", e_thread->passengersServiced);
     mutex_unlock(&floor_mutex);
 
     return len;
@@ -608,6 +608,7 @@ static int __init elevator_init(void) {
     elevator_thread.current_floor = current_floor; 
     elevator_thread.status = OFFLINE; 
     elevator_thread.numPassengers = 0; 
+    elevator_thread.passengersServiced = 0;
     mutex_unlock(&elevator_mutex);
 
 
