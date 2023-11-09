@@ -31,6 +31,7 @@ added & and .list to lines 300 and 393
 #include <linux/proc_fs.h>
 #include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/time.h>
 
 
 MODULE_LICENSE("GPL");
@@ -173,7 +174,7 @@ int issue_request(int start_floor, int destination_floor, int type){
     new_passenger->start_floor = start_floor;
     new_passenger->destination_floor = destination_floor;
 
-    building.num_people++;
+    building.num_people += 1;
     
     // add passenger with list_add_tail 
     list_add_tail(&new_passenger->list, &building.passengersWaiting[start_floor-1].list); // this is how we add to the list
@@ -293,12 +294,15 @@ void removePassenger(struct Elevator *e_thread) //need to pass in info to know w
 
 
 int move_to_next_floor(struct Elevator *e_thread, int num){
-   // -1 for down
-   // 1 for up
-   mutex_lock(&elevator_mutex);
-   return e_thread->current_floor += num;
-   mutex_unlock(&elevator_mutex);
+    // -1 for down
+    // 1 for up
+    int newFloor = e_thread->current_floor + num;
+    if((newFloor <= 0) || (newFloor > NUM_FLOORS))
+        return 0;
 
+    //else
+    e_thread->current_floor = newFloor;
+    return 1;
 }
 
 void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 seconds when moving between floors and 1.0 seconds when loading/unloading passengers
@@ -313,14 +317,17 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
         case UP:
             ssleep(2); // sleeps for 1 second, before processing next stuff!
             mutex_lock(&elevator_mutex);
-            e_thread->current_floor = move_to_next_floor(e_thread, 1);
+            move_to_next_floor(e_thread, 1); // only move if not at floor 6
             e_thread->status = LOADING;
             mutex_unlock(&elevator_mutex);
             break;
         case DOWN:
             ssleep(2); // sleeps for 2 seconds, before processing next stuff!
             mutex_lock(&elevator_mutex);
-            e_thread->current_floor = move_to_next_floor(e_thread, -1);
+            if(e_thread->current_floor != 1){
+                e_thread->current_floor -= 1;
+                // move_to_next_floor(e_thread, -1);
+            }
             e_thread->status = LOADING;
             mutex_unlock(&elevator_mutex);
             break;
@@ -464,19 +471,19 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
     }
     len += sprintf(buf + len, "\n\n");
 
-    for(int i = 0; i < NUM_FLOORS; i++) {
+    for(int i = NUM_FLOORS-1; i >= 0; i--) {
         int floor = i+1;
         
         mutex_lock(&elevator_mutex);
-        int temp = (i != e_thread->current_floor)-1;
+        int temp = (floor != e_thread->current_floor);
         mutex_unlock(&elevator_mutex);
         if(temp)
         {
-            len += sprintf(buf + len, "[ ] Floor %d: ", floor);
+            len += sprintf(buf + len, "[ ] Floor %d:", floor);
         }
         else
         {
-            len += sprintf(buf + len, "[*] Floor %d: ", floor);
+            len += sprintf(buf + len, "[*] Floor %d:", floor);
         }
 
         // print the people waiting
