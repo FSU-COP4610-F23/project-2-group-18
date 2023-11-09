@@ -350,10 +350,10 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
             int dir = moveLogic(e_thread);
             
             mutex_lock(&elevator_mutex);
-            int temp = (e_thread->numPassengers == 0);
+            int temp2 = (e_thread->numPassengers == 0);
             mutex_unlock(&elevator_mutex);
         
-            if(temp)
+            if(temp2)
             {
                 // find waiting passengers on other floors becuase no one in elevator and no one on this floor
                 mutex_lock(&elevator_mutex);
@@ -484,9 +484,9 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
         // MIGHT NEED KMALLOC HERE **************************************************************************************************************************************************************
         struct Passenger *variable;
         mutex_lock(&floor_mutex);
-        int temp = ((&building.passengersWaiting[i].list) == 0);
+        int temp3 = (list_empty(&building.passengersWaiting[i].list) == 0);
         mutex_unlock(&floor_mutex);
-        if(list_empty(temp))
+        if(temp3)
         { // if not empty
             int total = 0;
             mutex_lock(&floor_mutex);
