@@ -96,14 +96,21 @@ int moveLogic(struct Elevator *e_thread){ // this return how many floors you nee
     At each floor, if any of the 5 passengers can get off, get off.
     Start at Floor 1
     */
+    mutex_lock(&elevator_mutex);
     int currentLoc = e_thread->current_floor;
+    mutex_unlock(&elevator_mutex);
     int closest = NUM_FLOORS+1; // how far away is the closest floor to drop someone off
     for(int i = 0; i < MAX_PASSENGERS; i++){
-        if(e_thread->passengers[i].type == -1){
+        mutex_lock(&elevator_mutex);
+        int temp = (e_thread->passengers[i].type == -1);
+        mutex_unlock(&elevator_mutex);
+        if(temp){
             continue;
         }
         else{
+            mutex_lock(&elevator_mutex);
             int distance = e_thread->passengers[i].destination_floor - currentLoc; //get distance this person needs to travel
+            mutex_unlock(&elevator_mutex);
             if(abs(distance) < abs(closest))
             {
                 closest = distance;
@@ -201,13 +208,26 @@ void addPassenger(struct Elevator *e_thread){ //issue request calls this
     // The passed in passenger is the first one waiting on this floor (it points to the next waiting one)
        //Passenger pointer to name kmalloc
 
-    
-    while(!(e_thread->numPassengers < MAX_PASSENGERS)){ // can fit another passenger
+    // need e lock
+    mutex_lock(&elevator_mutex);
+    int temp = (e_thread->numPassengers < MAX_PASSENGERS);
+    mutex_unlock(&elevator_mutex);
+    while(!(temp)){ // can fit another passenger
+        mutex_unlock(&floor_mutex);
         if(list_empty(&building.passengersWaiting[(e_thread->current_floor)-1].list) != 0) 
+        {
+            mutex_unlock(&floor_mutex);
             break; // leave while loop - no one waiting on floor
-        
+        }
+        mutex_unlock(&floor_mutex);
+
         // Remove a waiting passenger and increase elevator->numPassengers - using kthread?
-        if(e_thread->weight + building.passengersWaiting[e_thread->current_floor-1].weight <= MAX_WEIGHT){ //weight is okay
+        mutex_lock(&elevator_mutex);
+        mutex_lock(&floor_mutex);
+        int temp = (e_thread->weight + building.passengersWaiting[e_thread->current_floor-1].weight <= MAX_WEIGHT);
+        mutex_unlock(&floor_mutex);
+        mutex_unlock(&elevator_mutex);
+        if(temp){ //weight is okay
             for(int i = 0; i < MAX_PASSENGERS; i++){
                 mutex_lock(&elevator_mutex);
                 mutex_lock(&floor_mutex);
@@ -225,8 +245,12 @@ void addPassenger(struct Elevator *e_thread){ //issue request calls this
                 mutex_unlock(&floor_mutex);
             }
             //change the array that holds the waiting people
+            mutex_lock(&elevator_mutex);
+            mutex_lock(&floor_mutex);
             list_rotate_left(&building.passengersWaiting[e_thread->current_floor-1].list);
             building.num_people--; 
+            mutex_unlock(&floor_mutex);
+            mutex_unlock(&elevator_mutex);
         }
         else
             break; // next person is too heavy so break out of while loop 
@@ -271,14 +295,20 @@ void removePassenger(struct Elevator *e_thread) //need to pass in info to know w
 int move_to_next_floor(struct Elevator *e_thread, int num){
    // -1 for down
    // 1 for up
+   mutex_lock(&elevator_mutex);
    return e_thread->current_floor += num;
+   mutex_unlock(&elevator_mutex);
 
 }
 
 void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 seconds when moving between floors and 1.0 seconds when loading/unloading passengers
     // We want to lock both mutex's up here and unlock after the switch statement 
+
+    mutex_lock(&elevator_mutex);
+    int temp = e_thread->status;
+    mutex_unlock(&elevator_mutex);
     
-    switch(e_thread->status) 
+    switch(temp) 
     {
         case UP:
             ssleep(2); // sleeps for 1 second, before processing next stuff!
@@ -296,14 +326,15 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
             break;
         case IDLE: // elevator is started with this and is also when there are no more passengers waiting
             // check if there are passengers waiting and if so then make it not idle anymore
-            mutex_lock(&elevator_mutex);
-
-            if(building.num_people > 0)
+            mutex_lock(&floor_mutex);
+            int temp = (building.num_people > 0);
+            mutex_unlock(&floor_mutex); 
+            if(temp)
             {
                 mutex_lock(&elevator_mutex);
                 e_thread->status = LOADING; // loading will change it to up/down to get the people
                 mutex_unlock(&elevator_mutex);
-            }            
+            }
             break;
         case OFFLINE:
             break;
@@ -316,9 +347,7 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
             if(stop == 0) // Not in the process of trying to stop
                 addPassenger(e_thread);
 
-            mutex_lock(&elevator_mutex);
             int dir = moveLogic(e_thread);
-            mutex_unlock(&elevator_mutex);            
             
             mutex_lock(&elevator_mutex);
             int temp = (e_thread->numPassengers == 0);
@@ -332,9 +361,9 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
                 int currentLoc = e_thread->current_floor;
                 mutex_unlock(&elevator_mutex);
 
-                mutex_lock(&floor_mutex);
                 for(int i = 0; i < NUM_FLOORS; i++)
                 {
+                    mutex_lock(&floor_mutex);
                     // if waiting passengers head != NULL
                     if(list_empty(&building.passengersWaiting[i].list) == 0) // not empty return 0
                     {
@@ -344,27 +373,38 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
                             direction = distance;
                         }
                     }
+                    mutex_unlock(&floor_mutex);
                 }
-                mutex_unlock(&floor_mutex);
 
-                mutex_lock(&elevator_mutex);
                 if(direction == NUM_FLOORS+1){ // there was no one waiting
                     if(stop == 1) // emptied ellevator and can stop it because stop_elevator() was called earlier 
                     {
+                        mutex_lock(&elevator_mutex);
                         e_thread->status = OFFLINE; // OFFILINE means it sits on a floor until start_elevator is called
                         flag = 0; // flag shows that elevator is stopped
                         stop = 0; // no longer trying to stop, it is stopped
+                        mutex_unlock(&elevator_mutex);
                     }
                     else // elevator is running but no one waiting on floors 
                     {
+                        mutex_lock(&elevator_mutex);
                         e_thread->status = IDLE;
+                        mutex_unlock(&elevator_mutex);
                     }
                 }
                 else if(direction < 0) // people waiting on floor below
+                {
+                    mutex_lock(&elevator_mutex);
                     e_thread->status = DOWN;
+                    mutex_unlock(&elevator_mutex);
+                }
                 else
+                {
+                    mutex_lock(&elevator_mutex);
                     e_thread->status = UP; // people waiting on floor above
-                mutex_unlock(&elevator_mutex);
+                    mutex_unlock(&elevator_mutex);
+                }
+                
                 
             }
             // if  need to go up:
@@ -398,7 +438,9 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
     len += sprintf(buf + len, "Current floor: %d\n", e_thread->current_floor);
     len += sprintf(buf + len, "Current weight: %d\n", e_thread->weight);
     len += sprintf(buf + len, "Elevator status:"); // This is who is inside the elevator
+    mutex_unlock(&elevator_mutex);
     for(int i = 0; i < MAX_PASSENGERS; i++){
+        mutex_lock(&elevator_mutex);
         switch (e_thread->passengers[i].type)
         {
         case -1:
@@ -418,25 +460,23 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
         default:
             break;
         }
+        mutex_unlock(&elevator_mutex);
     }
     len += sprintf(buf + len, "\n\n");
-    mutex_unlock(&elevator_mutex);
 
-    mutex_lock(&elevator_mutex);
-    mutex_lock(&floor_mutex);
     for(int i = 0; i < NUM_FLOORS; i++) {
         int floor = i+1;
         
         mutex_lock(&elevator_mutex);
-        if(i != e_thread->current_floor)
+        int temp = (i != e_thread->current_floor);
+        mutex_unlock(&elevator_mutex);
+        if(temp)
         {
             len += sprintf(buf + len, "[ ] Floor %d: ", floor);
-            mutex_unlock(&elevator_mutex);
         }
         else
         {
             len += sprintf(buf + len, "[*] Floor %d: ", floor);
-            mutex_unlock(&elevator_mutex);
         }
 
         // print the people waiting
@@ -444,15 +484,20 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
         // MIGHT NEED KMALLOC HERE **************************************************************************************************************************************************************
         struct Passenger *variable;
         mutex_lock(&floor_mutex);
-        mutex_lock(&elevator_mutex);
-        if(list_empty(&building.passengersWaiting[i].list) == 0)
+        int temp = ((&building.passengersWaiting[i].list) == 0);
+        mutex_unlock(&floor_mutex);
+        if(list_empty(temp))
         { // if not empty
             int total = 0;
+            mutex_lock(&floor_mutex);
             list_for_each_entry(variable, &building.passengersWaiting[i].list, list){
                 total++;
             }
+            mutex_unlock(&floor_mutex);
             len += sprintf(buf + len, " %d", total);
 
+            mutex_unlock(&elevator_mutex);
+            mutex_lock(&floor_mutex);
             list_for_each_entry(variable, &building.passengersWaiting[i].list, list){ // go thru list of passengers waiting on floor i
                 switch (variable->type)
                 {
@@ -480,23 +525,21 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
         else // no one waiting on floor i
         {
             len += sprintf(buf + len, " 0");
-            mutex_unlock(&floor_mutex);
-            mutex_unlock(&elevator_mutex);
         }
         len += sprintf(buf + len, "\n");
     }
-    mutex_unlock(&floor_mutex);
-    mutex_unlock(&elevator_mutex);
 
     len += sprintf(buf + len, "\n");
 
-    mutex_lock(&floor_mutex);
+
     mutex_lock(&elevator_mutex);
     len += sprintf(buf + len, "Number of passengers: %d\n", e_thread->numPassengers);
+    mutex_unlock(&elevator_mutex);
+
+    mutex_lock(&floor_mutex);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", building.num_people);
     // len += sprintf(buf + len, "Number of passengers serviced: %d\n", passengersServiced);
     mutex_unlock(&floor_mutex);
-    mutex_unlock(&elevator_mutex);
 
     return len;
 }
@@ -550,39 +593,30 @@ static int __init elevator_init(void) {
     STUB_issue_request = issue_request;
     STUB_stop_elevator = stop_elevator;
 
-    mutex_lock(&floor_mutex);
-
     for(int i = 0; i < NUM_FLOORS; i++){
+        mutex_lock(&floor_mutex);
         INIT_LIST_HEAD(&building.passengersWaiting[i].list);
+        mutex_unlock(&floor_mutex);
     }
 
-    mutex_unlock(&floor_mutex);
 
-    mutex_lock(&elevator_mutex);
 
     spawn_elevator(&elevator_thread); // this is where the elevator moves and does everything
-
+    
+    mutex_lock(&elevator_mutex);
     static int current_floor = 1; 
     elevator_thread.current_floor = current_floor; 
     elevator_thread.status = OFFLINE; 
     elevator_thread.numPassengers = 0; 
+    mutex_unlock(&elevator_mutex);
+
 
     for(int i = 0; i < MAX_PASSENGERS; i++) // This for initializing the passengers INSIDE elevator
     {
-        // struct Passenger *new_passenger = kmalloc(sizeof(struct Passenger), GFP_KERNEL); 
-        
-        // if(!new_passenger)
-        // {
-        //     printk(KERN_INFO "Error: could not allocate memory for new passenger\n");
-        //     return -ENOMEM;
-        // }
-        
-        // elevator_thread.passengers[i] = new_passenger; // gives us an error
+        mutex_lock(&elevator_mutex);
         elevator_thread.passengers[i].type = -1;
+        mutex_unlock(&elevator_mutex);
     }
-
-    mutex_unlock(&elevator_mutex);
-
 
     if(IS_ERR(elevator_thread.kthread)) {
         printk(KERN_WARNING "error creating thread");
@@ -610,25 +644,25 @@ static void __exit elevator_exit(void)
     STUB_issue_request = NULL;
     STUB_stop_elevator = NULL;
 
-    mutex_lock(&floor_mutex);
 
     for(int i = 0; i < NUM_FLOORS; i++){
+        mutex_lock(&floor_mutex);
         list_for_each_entry_safe(passenger, next, &building.passengersWaiting[i].list, list) {
             list_del(&passenger->list);
             kfree(passenger);
         }
+        mutex_unlock(&floor_mutex);
     }
 
-    mutex_unlock(&floor_mutex);
     
-    mutex_lock(&elevator_mutex);
 
     // Free the memory we allocated in init
     for(int i = 0; i < MAX_PASSENGERS; i++){
+        mutex_lock(&elevator_mutex);
         kfree(&elevator_thread.passengers[i]);
+        mutex_unlock(&elevator_mutex);
     }
 
-    mutex_unlock(&elevator_mutex);
     
     kthread_stop(elevator_thread.kthread); // this is where we stop the thread.
 
