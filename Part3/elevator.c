@@ -213,7 +213,7 @@ void addPassenger(struct Elevator *e_thread){ //issue request calls this
     mutex_lock(&elevator_mutex);
     int temp = (e_thread->numPassengers < MAX_PASSENGERS); // we don't have max
     mutex_unlock(&elevator_mutex);
-    while(!(temp)){ // can fit another passenger - this shouldn't be ! 
+    while((temp)){ // can fit another passenger - this shouldn't be ! // you forgot to remove it lol yes i am aware lol
         mutex_lock(&floor_mutex);
         mutex_lock(&elevator_mutex);
         int temp = (list_empty(&building.passengersWaiting[(e_thread->current_floor)-1].list) != 0);
