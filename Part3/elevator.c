@@ -207,57 +207,72 @@ void addPassenger(struct Elevator *e_thread){ //issue request calls this
     // This will only not add a passenger if the passenger would make the elevator overweight
     // This function adds as many passengers as it can (until 5 or 750lbs)
     // The passed in passenger is the first one waiting on this floor (it points to the next waiting one)
-       //Passenger pointer to name kmalloc
 
-    // need e lock
-    mutex_lock(&elevator_mutex);
-    int temp = (e_thread->numPassengers < MAX_PASSENGERS); // we don't have max
-    mutex_unlock(&elevator_mutex);
-    while((temp)){ // can fit another passenger - this shouldn't be ! // you forgot to remove it lol yes i am aware lol
-        mutex_lock(&floor_mutex);
+    int done = 0;
+    while((!done)){ // can fit another passenger
+        //I have an idea
         mutex_lock(&elevator_mutex);
-        int temp = (list_empty(&building.passengersWaiting[(e_thread->current_floor)-1].list) != 0);
+        int temp = (e_thread->numPassengers < MAX_PASSENGERS); // we don't have max
         mutex_unlock(&elevator_mutex);
-        mutex_unlock(&floor_mutex);
+        
+        if(temp){ //yeah??? hang on let me step thru
 
-        if(temp) 
-        {
-            break; // leave while loop - no one waiting on floor
-        }
+            mutex_lock(&floor_mutex);
+            mutex_lock(&elevator_mutex);
+            int temp0 = (list_empty(&building.passengersWaiting[(e_thread->current_floor)-1].list) != 0);
+            mutex_unlock(&elevator_mutex);
+            mutex_unlock(&floor_mutex);
 
-        // Remove a waiting passenger and increase elevator->numPassengers - using kthread?
-        mutex_lock(&elevator_mutex);
-        mutex_lock(&floor_mutex);
-        int temp = (e_thread->weight + building.passengersWaiting[e_thread->current_floor-1].weight <= MAX_WEIGHT);
-        mutex_unlock(&floor_mutex);
-        mutex_unlock(&elevator_mutex);
-        if(temp){ //weight is okay
-            for(int i = 0; i < MAX_PASSENGERS; i++){
-                mutex_lock(&elevator_mutex);
-                mutex_lock(&floor_mutex);
-                if(e_thread->passengers[i].type == -1){
-                    e_thread->passengers[i].type = building.passengersWaiting[e_thread->current_floor-1].type; 
-                    e_thread->passengers[i].destination_floor = building.passengersWaiting[e_thread->current_floor-1].destination_floor;
-                    e_thread->passengers[i].start_floor = building.passengersWaiting[e_thread->current_floor-1].start_floor;
-                    e_thread->passengers[i].weight = building.passengersWaiting[e_thread->current_floor-1].weight;
-                    e_thread->numPassengers++; // increase number of passengers
-                    mutex_unlock(&elevator_mutex);
-                    mutex_unlock(&floor_mutex);
-                    break; // leave the for loop
-                }
-                mutex_unlock(&elevator_mutex);
-                mutex_unlock(&floor_mutex);
+            if(temp0) 
+            {
+                break; // leave while loop - no one waiting on floor
             }
-            //change the array that holds the waiting people
+
+            // Remove a waiting passenger and increase elevator->numPassengers - using kthread?
             mutex_lock(&elevator_mutex);
             mutex_lock(&floor_mutex);
-            list_rotate_left(&building.passengersWaiting[e_thread->current_floor-1].list);
-            building.num_people--; 
+            int temp5 = (e_thread->weight + building.passengersWaiting[e_thread->current_floor-1].weight <= MAX_WEIGHT);
             mutex_unlock(&floor_mutex);
             mutex_unlock(&elevator_mutex);
+            if(temp5){ //weight is okay
+                for(int i = 0; i < MAX_PASSENGERS; i++){
+                    mutex_lock(&elevator_mutex);
+                    mutex_lock(&floor_mutex);
+                    if(e_thread->passengers[i].type == -1){
+                        e_thread->passengers[i].type = building.passengersWaiting[e_thread->current_floor-1].type; 
+                        e_thread->passengers[i].destination_floor = building.passengersWaiting[e_thread->current_floor-1].destination_floor;
+                        e_thread->passengers[i].start_floor = building.passengersWaiting[e_thread->current_floor-1].start_floor;
+                        e_thread->passengers[i].weight = building.passengersWaiting[e_thread->current_floor-1].weight;
+                        e_thread->numPassengers++; // increase number of passengers
+                        mutex_unlock(&elevator_mutex);
+                        mutex_unlock(&floor_mutex);
+                        break; // leave the for loop
+                    } //it added a person 5 times so it thinks no one else is waiting so its not picking ppl up bc it thinks noone is waiting
+                    // that is one issue but that issue is BECUASE it is adding the person 5 times instead of one time
+                    // I think maybe rotate left isn't working and it therefor that person is still waiting 
+                    //maybe
+                    //so this issue is that our elevator is full with the same person 5 times yes yes so we cant get F3
+                    //it is F3 but it's either printing wrong or we add it to the elevator wrong got it dont delete these comments
+                
+                    mutex_unlock(&elevator_mutex);
+                    mutex_unlock(&floor_mutex);
+                }
+                //change the array that holds the waiting people
+                mutex_lock(&elevator_mutex);
+                mutex_lock(&floor_mutex);
+                //rotate left came from Becky and Oliva NOT Micheal
+                list_rotate_left(&building.passengersWaiting[e_thread->current_floor-1].list); // why are we doing -1
+                //because current floor is say 1 but you want the 0th spot in the array. Array starts at 0. floor starts at 1
+                building.num_people--; 
+                mutex_unlock(&floor_mutex);
+                mutex_unlock(&elevator_mutex);
+            }
+            else
+                break; // next person is too heavy so break out of while loop 
         }
-        else
-            break; // next person is too heavy so break out of while loop 
+        else {
+            done = 1; // i think we should try
+        }
     }
 
 }         
@@ -350,10 +365,9 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
             break;
         case LOADING:
             // unload and then load passengers
-
             removePassenger(e_thread); //this removes (unloads) and does ssleep(1)
 
-            // load the  passengers
+            // load the passengers
             if(stop == 0) // Not in the process of trying to stop
                 addPassenger(e_thread);
 
