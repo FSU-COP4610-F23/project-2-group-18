@@ -1,8 +1,8 @@
 /*
 ASK MICHAEL:
 - IF WE NEED TO WAIT 1 SECOND FOR LOADING EACH PASSENGER OR ONE SECOND AND THEN LOAD ALL OF THEM AT ONCE
-- How many passengers will be added to waiting (this has to do with the proc and buf size)
-    ex) ./producer [num passengers]
+- have Michael check mellory allocation with add passenger (free memory from waiting, we have del not kfree)
+- Do we actually need a Makefile outside of our three parts (on the project rubric it says we do (very bottom))
 
 
 Linked List API: html;//www.kernel.org/doc/html/v4.14/core-api/kernel-api.html
@@ -554,7 +554,7 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
 
     mutex_lock(&floor_mutex);
     len += sprintf(buf + len, "Number of passengers waiting: %d\n", building.num_people);
-    // len += sprintf(buf + len, "Number of passengers serviced: %d\n", e_thread->passengersServiced);
+    len += sprintf(buf + len, "Number of passengers serviced: %d\n", e_thread->passengersServiced);
     mutex_unlock(&floor_mutex);
 
     return len;
@@ -563,10 +563,10 @@ int print_building_state(char *buf, struct Elevator *e_thread) {
 
 static ssize_t procfile_read(struct file *file, char __user *ubuf, size_t count, loff_t *ppos){ // COME BACK TO ME PLZ
     
-    char buf[1000];
+    char buf[10000];
     int len = 0;
 
-    if (*ppos > 0 || count < 1000)
+    if (*ppos > 0 || count < 10000)
         return 0;
 
 
