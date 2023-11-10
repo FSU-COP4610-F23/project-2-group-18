@@ -336,6 +336,12 @@ void process_elevator_state(struct Elevator *e_thread) { // Elevator waits 2.0 s
         case IDLE: // elevator is started with this and is also when there are no more passengers waiting
             // check if there are passengers waiting and if so then make it not idle anymore
             mutex_lock(&floor_mutex);
+            if(stop == 1)
+            {
+                e_thread->status = OFFLINE;
+                flag = 0;
+                stop = 0;
+            }
             int temp = (building.num_people > 0);
             mutex_unlock(&floor_mutex); 
             if(temp)
