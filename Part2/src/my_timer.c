@@ -48,7 +48,8 @@ static ssize_t timer_read(struct file *file, char __user *ubuf, size_t count, lo
         }
 
         len = snprintf(buf, sizeof(buf), "current time: %lld.%09lld\nelapsed time: %lld.%09lld\n", 
-            (long long)(ts_now.tv_sec), (long long)(ts_now.tv_nsec), (long long)sec, (long long)nsec);
+            (long long)(ts_now.tv_sec), (long long)(ts_now.tv_nsec), 
+            (long long)sec, (long long)nsec);
     }
 
     previous_time = ts_now; //change the previous time to current time
