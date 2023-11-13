@@ -4,41 +4,42 @@
 
 ## Group Members
 - **Amelia Sieg**: ats20b@fsu.edu
-- **Jane Smith**: js19@fsu.edu
-- **Alex Brown**: ab19@fsu.edu
+- **Olivia Judah**: ogj21@fsu.edu
+- **Rebecca Anestad**: rba20@fsu.edu
+
 ## Division of Labor
 
 ### Part 1: System Call Tracing
 - **Responsibilities**: [Description]
-- **Assigned to**: John Doe
+- **Assigned to**: Amelia Sieg, Olivia Judah
 
 ### Part 2: Timer Kernel Module
 - **Responsibilities**: [Description]
-- **Assigned to**: Jane Smith
+- **Assigned to**: Rebecca Anestad, Amelia Sieg
 
 ### Part 3a: Adding System Calls
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown
+- **Assigned to**: Olivia Judah, Amelia Sieg
 
 ### Part 3b: Kernel Compilation
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, Jane Smith
+- **Assigned to**: Amelia Sieg, Olivia Judah, Rebecca Anestad
 
 ### Part 3c: Threads
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, Jane Smith
+- **Assigned to**: Olivia Judah, Rebecca Anestad
 
 ### Part 3d: Linked List
 - **Responsibilities**: [Description]
-- **Assigned to**: Jane Smith
+- **Assigned to**: Rebecca Anestad, Amelia Sieg
 
 ### Part 3e: Mutexes
 - **Responsibilities**: [Description]
-- **Assigned to**: John Doe
+- **Assigned to**: Amelia Sieg, Olivia Judah
 
 ### Part 3f: Scheduling Algorithm
 - **Responsibilities**: [Description]
-- **Assigned to**: Alex Brown, John Doe
+- **Assigned to**: Rebecca Anestad, Amelia Sieg, Olivia Judah
 
 ## File Listing
 ```
@@ -65,8 +66,7 @@ elevator/
 # How to Compile & Execute
 
 ### Requirements
-- **Compiler**: e.g., `gcc` for C/C++, `rustc` for Rust.
-- **Dependencies**: List any libraries or frameworks necessary (rust only).
+- **Compiler**: `gcc` for C/C++
 
 ## Part 1
 
@@ -100,17 +100,21 @@ This will run the program ...
 ## Part 3
 
 ### Compilation
-For a C/C++ example:
-```bash
+make clean
 make
-```
+
 This will build the executable in ...
+
 ### Execution
-```bash
-make run
-```
+sudo insmod elevator.ko
+
 This will run the program ...
 
+watch -n 1 cat /proc/elevator
+./producer [number of passengers]
+./consumer --start
+./consumer --stop
+sudo rmmod elevator.ko
 
 ## Bugs
 - **Bug 1**: This is bug 1.
