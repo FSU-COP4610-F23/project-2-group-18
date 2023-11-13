@@ -211,7 +211,8 @@ void addPassenger(struct Elevator *e_thread)
                         {
                             mutex_unlock(&elevator_mutex);
                             mutex_unlock(&floor_mutex);
-                            ssleep(1); // this is where it sleeps for 1 sec per passenger - we want 1 sec total
+                            // this is where it sleeps for 1 sec for LOADING if not done already
+                            ssleep(1); 
                             mutex_lock(&elevator_mutex);
                             mutex_lock(&floor_mutex);
                             alreadySlept = 1;
