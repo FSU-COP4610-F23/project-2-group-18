@@ -38,7 +38,7 @@ Project 2 is centered around system calls, kernel programming, concurrency, sync
 - **Assigned to**: Amelia Sieg, Olivia Judah
 
 ### Part 3f: Scheduling Algorithm
-- **Responsibilities**: [Description]
+- **Responsibilities**: Our scheduling algorithm is focused around the Shortest Seek Time First (SSTF) algorithm. SSTF selects the request with the least seek time from the current head position. In this case, our elevator scans the destination floors of its current passengers and goes to the floor that is the closest.
 - **Assigned to**: Rebecca Anestad, Amelia Sieg, Olivia Judah
 
 ## File Listing
