@@ -1,40 +1,40 @@
 # Dorm Elevator
 
-[Description]
+Project 2 is centered around system calls, kernel programming, concurrency, synchronization, and an elevator scheduling algorithm. For the dorm elevator, we created a kernel module representing the elevator inside a building with passengers. It supports operations like starting, stopping, and issuing requests of those student passengers. The module also provides a "/proc/elevator" entry to display important elevator information.
 
 ## Group Members
 - **Amelia Sieg**: ats20b@fsu.edu
 - **Olivia Judah**: ogj21@fsu.edu
-- **Rebecca Anestad**: rba20@fsu.edu
+- **Rebecca Anestad**: rba20a@fsu.edu
 
 ## Division of Labor
 
 ### Part 1: System Call Tracing
-- **Responsibilities**: [Description]
+- **Responsibilities**: We created an empty C program named "empty" and then made a copy of it called "part1". We then added exactly four system calls to the "part1" program - write, sleep, fork, and exit. Then, we verified that we have added the correct number of system calls using the strace command.
 - **Assigned to**: Amelia Sieg, Olivia Judah
 
 ### Part 2: Timer Kernel Module
-- **Responsibilities**: [Description]
+- **Responsibilities**: We created a kernel module named "my_timer" that utilizes the function ktime_get_real_ts64() to retrieve the time value, which includes seconds and nanoseconds since the Unix Epoch. When the my_timer module is loaded using insmod, it creates a proc entry named "/proc/timer". When the my_timer module is unloaded using rmmod, the /proc/timer entry is removed. On each read operation of "/proc/timer", we used the proc interface to print both the current time and the elapsed time since the last call.
 - **Assigned to**: Rebecca Anestad, Amelia Sieg
 
 ### Part 3a: Adding System Calls
-- **Responsibilities**: [Description]
+- **Responsibilities**: We modified the kernel by adding three system calls (start_elevator, stop_elevator, and issue_request) to control the elevator and create passengers. We had to modify multiple files to incorproate the functionality of these system calls.
 - **Assigned to**: Olivia Judah, Amelia Sieg
 
 ### Part 3b: Kernel Compilation
-- **Responsibilities**: [Description]
+- **Responsibilities**: We compiled the kernel with our newly added system calls. It took a while and we also had to check that we installed our kernel by doing the "uname -r" command in the terminal.
 - **Assigned to**: Amelia Sieg, Olivia Judah, Rebecca Anestad
 
 ### Part 3c: Threads
-- **Responsibilities**: [Description]
+- **Responsibilities**: We use a kthread to control the elevator movement.
 - **Assigned to**: Olivia Judah, Rebecca Anestad
 
 ### Part 3d: Linked List
-- **Responsibilities**: [Description]
+- **Responsibilities**: We use linked lists to handle the number of passengers per floor/elevator.
 - **Assigned to**: Rebecca Anestad, Amelia Sieg
 
 ### Part 3e: Mutexes
-- **Responsibilities**: [Description]
+- **Responsibilities**: We use a mutex to control shared data access between floor and elevators. We had to ensure that we were locking and unlocking around all necessary information to prevent deadlocks.
 - **Assigned to**: Amelia Sieg, Olivia Judah
 
 ### Part 3f: Scheduling Algorithm
