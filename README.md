@@ -45,81 +45,78 @@ Project 2 is centered around system calls, kernel programming, concurrency, sync
 ```
 elevator/
 ├── Makefile
-├── part1/
+├── Part1/
 │   ├── empty.c
 │   ├── empty.trace
 │   ├── part1.c
-│   ├── part1.trace
-│   └── Makefile
-├── part2/
+│   └── part1.trace
+├── Part2/
 │   ├── src/
+|   |   ├── my_timer.c
 │   └── Makefile
-├── part3/
+├── Part3/
 │   ├── src/
-│   ├── tests/
+|   |   ├── elevator.c
 │   ├── Makefile
-│   └── sys_call.c
-├── Makefile
+│   └── syscalls.c
 └── README.md
 
 ```
-# How to Compile & Execute
-
 ### Requirements
 - **Compiler**: `gcc` for C/C++
 
 ## Part 1
-
 ### Compilation
-For a C/C++ example:
-```bash
-make
-```
-This will build the executable in ...
+gcc -o empty empty.c
+gcc -o part1 part1.c
+
+This will build the executable in the same folder
+
 ### Execution
-```bash
-make run
-```
-This will run the program ...
+strace -o empty.trace ./empty
+strace -o part1.trace ./part1
+
+This will trace the programs
 
 ## Part 2
-
 ### Compilation
 For a C/C++ example:
 ```bash
 make
 ```
-This will build the executable in ...
+This will build the executable in the src folder in Part2
+
 ### Execution
-```bash
-make run
-```
-This will run the program ...
+sudo insmod my_timer.ko
+This will run the kernel
+
+watch -n 1 cat /proc/timer
+
+sleep [number of seconds]
+
+sudo rmmod my_timer.ko
 
 
 ## Part 3
-
 ### Compilation
-make clean
 make
 
-This will build the executable in ...
+This will build the executable in the src folder in Part3
 
 ### Execution
 sudo insmod elevator.ko
 
-This will run the program ...
+This will run the kernel
 
 watch -n 1 cat /proc/elevator
 ./producer [number of passengers]
 ./consumer --start
 ./consumer --stop
+
 sudo rmmod elevator.ko
 
 ## Bugs
-- **Bug 1**: This is bug 1.
-- **Bug 2**: This is bug 2.
-- **Bug 3**: This is bug 3.
+- No bugs to report
 
 ## Considerations
-[Description]
+[None]
